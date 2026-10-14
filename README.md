@@ -13,9 +13,9 @@ It supports plain text, Markdown, PDF, and DOCX inputs, and can optionally surfa
 
 ## What the project does
 
-This project turns each document into a semantic embedding using a Sentence-BERT model, then computes the cosine similarity between the two vectors:
+This project uses Sentence-BERT embeddings and cosine similarity to compare documents:
 
-- document similarity score: how semantically similar the full texts are
+- document similarity score: a coverage-adjusted cosine score that measures shared meaning and penalizes content found in only one document
 - sentence alignment matches: which sentence in document 1 best matches which sentence in document 2
 - interpretation: labels the score as low, medium, or high
 
@@ -119,7 +119,8 @@ streamlit run streamlit_app.py
 - file upload for both documents
 - model selection for the SBERT encoder
 - sentence match count slider
-- whole-document cosine similarity score
+- coverage-adjusted document similarity score
+- raw whole-document embedding cosine score
 - interpretation label (low / medium / high)
 - visual similarity spectrum
 - preview panes for both uploaded texts
@@ -212,7 +213,14 @@ This keeps the semantic comparison stable without aggressively rewriting the con
 
 Both documents are encoded with a Sentence-BERT model into dense vectors. These vectors capture semantic meaning rather than exact word overlap.
 
-The document similarity is then computed as the cosine similarity between the two embeddings:
+The raw document embedding similarity is computed as the cosine similarity between the two embeddings. The reported `cosine_similarity` is then adjusted using bidirectional sentence coverage:
+
+- each sentence is matched to its strongest counterpart
+- weak matches below 0.5 are treated as misses
+- sentence matches are weighted by sentence length
+- coverage is calculated in both directions and combined with a geometric mean
+
+This prevents a document from receiving a high score merely because it contains one matching document plus several unrelated paragraphs. The unadjusted embedding result is also available as `embedding_cosine_similarity` in programmatic results.
 
 - values near `1.0` imply very similar meaning
 - values near `0.0` imply weak similarity

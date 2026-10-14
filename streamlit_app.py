@@ -116,9 +116,24 @@ else:
 
         st.subheader("Comparison Result")
         st.metric(
-            label="Cosine similarity",
+            label="Coverage-adjusted similarity",
             value=f"{result['cosine_similarity']:.4f}",
         )
+        st.caption(
+            "This score combines bidirectional sentence coverage with semantic similarity "
+            "to penalize unrelated content."
+        )
+        raw_embedding_score = result.get("embedding_cosine_similarity")
+        if raw_embedding_score is not None:
+            st.metric(
+                label="Raw embedding cosine",
+                value=f"{raw_embedding_score:.4f}",
+            )
+        else:
+            st.info(
+                "Raw embedding cosine is unavailable from the active processor. "
+                "Restart Streamlit after updating the comparison processor."
+            )
         st.write(f"Interpretation: {result['interpretation'].upper()}")
 
         with st.expander("Document 1 preview"):
@@ -126,7 +141,10 @@ else:
         with st.expander("Document 2 preview"):
             st.text_area("Document 2 preview", text2[:4000], height=220, label_visibility="collapsed", key="doc2_preview")
 
-        alignments = result.get("sentence_alignments", [])
+        alignments = result.get(
+            "sentence_coverage",
+            result.get("sentence_alignments", []),
+        )
         if alignments:
             strongest = sorted(alignments, key=lambda item: item["score"], reverse=True)
             weakest = sorted(alignments, key=lambda item: item["score"])
